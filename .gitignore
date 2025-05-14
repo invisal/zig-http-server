@@ -1,0 +1,33 @@
+# Zig build artifacts
+zig-out/
+zig-cache/
+.zig-cache/
+
+# Binaries and executables
+*.exe
+*.out
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+*.pdb
+
+# IDE and editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# User-specific project files
+build-user.zig
+
+# Dependencies (if you're using package managers)
+deps/
+
+# OS-specific files
+Thumbs.db

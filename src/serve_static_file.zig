@@ -1,0 +1,46 @@
+const std = @import("std");
+
+pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
+    const file = std.fs.cwd().openFile(path, .{}) catch |err| {
+        std.debug.print("Error opening file: {}\n", .{err});
+        try client.stream.writeAll("HTTP/1.1 404 Not Found\r\n\r\n");
+        return err;
+    };
+    defer file.close();
+
+    // Get the file extension
+    const ext = std.fs.path.extension(path);
+    var contentType: []const u8 = "application/octet-stream"; // Default content type
+
+    if (std.mem.eql(u8, ext, "html")) {
+        contentType = "text/html";
+    } else if (std.mem.eql(u8, ext, "css")) {
+        contentType = "text/css";
+    } else if (std.mem.eql(u8, ext, "js")) {
+        contentType = "application/javascript";
+    } else if (std.mem.eql(u8, ext, "png")) {
+        contentType = "image/png";
+    } else if (std.mem.eql(u8, ext, "jpg") or std.mem.eql(u8, ext, "jpeg")) {
+        contentType = "image/jpeg";
+    } else if (std.mem.eql(u8, ext, "gif")) {
+        contentType = "image/gif";
+    } else if (std.mem.eql(u8, ext, "svg")) {
+        contentType = "image/svg+xml";
+    } else if (std.mem.eql(u8, ext, "ico")) {
+        contentType = "image/x-icon";
+    } else if (std.mem.eql(u8, ext, "txt")) {
+        contentType = "text/plain";
+    } else if (std.mem.eql(u8, ext, "json")) {
+        contentType = "application/json";
+    }
+
+    const fileSize = try file.getEndPos();
+    try std.fmt.format(client.stream.writer(), "HTTP/1.1 200 OK\r\nContent-Type: {any}\r\nConnection: close\r\nContent-Length: {any}\r\n\r\n", .{ contentType, fileSize });
+
+    var buffer: [4096]u8 = undefined;
+    while (true) {
+        const bytes_read = try file.read(&buffer);
+        if (bytes_read == 0) break; // EOF
+        try client.stream.writeAll(buffer[0..bytes_read]);
+    }
+}

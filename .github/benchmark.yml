@@ -1,0 +1,83 @@
+name: Benchmark Zig Proxy vs Nginx
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx wrk bc
+
+      - name: Build Zig proxy
+        run: |
+          zig build -Drelease-fast      - name: Start Zig proxy
+        run: |
+          ./zig-out/bin/zig_http_server & echo $! > zig_proxy.pid
+          sleep 2  # Wait for it to be ready
+
+      - name: Set permissions for public folder
+        run: |
+          # Ensure Nginx can access the public folder
+          sudo chmod -R 755 ${{ github.workspace }}/public
+
+      - name: Start Nginx
+        run: |
+          # Configure Nginx to serve from our public folder
+          echo 'server {
+            listen 80 default_server;
+            root ${{ github.workspace }}/public;
+            index index.html;
+            server_name _;
+            location / {
+              try_files $uri $uri/ =404;
+            }
+          }' | sudo tee /etc/nginx/sites-available/default
+          sudo systemctl restart nginx
+
+      - name: Benchmark Zig proxy
+        run: |
+          wrk -t4 -c50 -d10s http://localhost:8080 > zig_bench.txt
+
+      - name: Benchmark Nginx
+        run: |
+          wrk -t4 -c50 -d10s http://localhost > nginx_bench.txt
+
+      - name: Compare results
+        run: |
+          echo "Zig Proxy Benchmark (serving from public folder):"
+          cat zig_bench.txt
+          echo "-----------------------------------------"
+          echo "Nginx Benchmark (serving from same public folder):"
+          cat nginx_bench.txt
+          echo "-----------------------------------------"
+          echo "Comparing request throughput:"
+          ZIG_RPS=$(grep "Requests/sec" zig_bench.txt | awk '{print $2}')
+          NGINX_RPS=$(grep "Requests/sec" nginx_bench.txt | awk '{print $2}')
+          echo "Zig: $ZIG_RPS requests/sec"
+          echo "Nginx: $NGINX_RPS requests/sec"
+          
+          if (( $(echo "$ZIG_RPS > $NGINX_RPS" | bc -l) )); then
+            PERC_DIFF=$(echo "scale=2; ($ZIG_RPS - $NGINX_RPS) * 100 / $NGINX_RPS" | bc)
+            echo "Zig is $PERC_DIFF% faster than Nginx"
+          else
+            PERC_DIFF=$(echo "scale=2; ($NGINX_RPS - $ZIG_RPS) * 100 / $ZIG_RPS" | bc)
+            echo "Nginx is $PERC_DIFF% faster than Zig"
+          fi
+
+      - name: Stop Zig proxy
+        run: |
+          kill $(cat zig_proxy.pid) || true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: |
+            zig_bench.txt
+            nginx_bench.txt
