@@ -21,15 +21,16 @@ fn handle_client(client: std.net.Server.Connection) !void {
 
     var bodyContentLength: usize = 0;
 
+    var first_line_buffer: [2048]u8 = undefined;
+    var line_buffer: [2048]u8 = undefined;
+
     // Reading the first line
-    const firstLine = client.stream.reader().readUntilDelimiterAlloc(std.heap.page_allocator, '\n', 2048) catch |err| {
+    const first_line = client.stream.reader().readUntilDelimiter(&first_line_buffer, '\n') catch |err| {
         std.debug.print("Error reading first line: {}\n", .{err});
         return err;
     };
 
-    defer std.heap.page_allocator.free(firstLine);
-
-    var splitFirstLine = std.mem.splitSequence(u8, firstLine, " ");
+    var splitFirstLine = std.mem.splitSequence(u8, first_line, " ");
     const method = splitFirstLine.next().?;
     var path = splitFirstLine.next().?;
 
@@ -50,12 +51,10 @@ fn handle_client(client: std.net.Server.Connection) !void {
 
     // Reading all headers
     while (true) {
-        const line = client.stream.reader().readUntilDelimiterAlloc(std.heap.page_allocator, '\n', 2048) catch |err| {
+        const line = client.stream.reader().readUntilDelimiter(&line_buffer, '\n') catch |err| {
             std.debug.print("Error reading line: {}\n", .{err});
             return err;
         };
-
-        defer std.heap.page_allocator.free(line);
 
         if (line.len == 0) break; // End of headers
         if (line[0] == '\r') break; // End of headers
