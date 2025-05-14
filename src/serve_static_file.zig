@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
     const file = std.fs.cwd().openFile(path, .{}) catch |err| {
@@ -44,3 +45,22 @@ pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
         try client.stream.writeAll(buffer[0..bytes_read]);
     }
 }
+
+// if (builtin.os.tag == .linux) {
+//     // Linux sendfile implementation
+//     const os = std.os;
+//     const fd = file.handle;
+//     const sock_fd = client.stream.handle;
+
+//     var offset: i64 = 0;
+//     var remaining = fileSize;
+
+//     while (remaining > 0) {
+//         const sent = os.linux.sendfile(sock_fd, fd, &offset, remaining);
+
+//         if (sent < 1) break;
+
+//         remaining -= sent;
+//         if (remaining == 0) break;
+//     }
+// } else {
