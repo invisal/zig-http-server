@@ -13,29 +13,30 @@ pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
     const ext = std.fs.path.extension(path);
     var contentType: []const u8 = "application/octet-stream"; // Default content type
 
-    if (std.mem.eql(u8, ext, "html")) {
+    if (std.mem.eql(u8, ext, ".html")) {
         contentType = "text/html";
-    } else if (std.mem.eql(u8, ext, "css")) {
+    } else if (std.mem.eql(u8, ext, ".css")) {
         contentType = "text/css";
-    } else if (std.mem.eql(u8, ext, "js")) {
+    } else if (std.mem.eql(u8, ext, ".js")) {
         contentType = "application/javascript";
-    } else if (std.mem.eql(u8, ext, "png")) {
+    } else if (std.mem.eql(u8, ext, ".png")) {
         contentType = "image/png";
-    } else if (std.mem.eql(u8, ext, "jpg") or std.mem.eql(u8, ext, "jpeg")) {
+    } else if (std.mem.eql(u8, ext, ".jpg") or std.mem.eql(u8, ext, ".jpeg")) {
         contentType = "image/jpeg";
-    } else if (std.mem.eql(u8, ext, "gif")) {
+    } else if (std.mem.eql(u8, ext, ".gif")) {
         contentType = "image/gif";
-    } else if (std.mem.eql(u8, ext, "svg")) {
+    } else if (std.mem.eql(u8, ext, ".svg")) {
         contentType = "image/svg+xml";
-    } else if (std.mem.eql(u8, ext, "ico")) {
+    } else if (std.mem.eql(u8, ext, ".ico")) {
         contentType = "image/x-icon";
-    } else if (std.mem.eql(u8, ext, "txt")) {
+    } else if (std.mem.eql(u8, ext, ".txt")) {
         contentType = "text/plain";
-    } else if (std.mem.eql(u8, ext, "json")) {
+    } else if (std.mem.eql(u8, ext, ".json")) {
         contentType = "application/json";
     }
 
     const fileSize = try file.getEndPos();
+
     // Write HTTP headers in separate parts to avoid formatting overhead
     try client.stream.writeAll("HTTP/1.1 200 OK\r\n");
     try client.stream.writeAll("Content-Type: ");
