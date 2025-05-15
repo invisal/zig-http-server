@@ -50,7 +50,7 @@ pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
     try client.stream.writeAll(sizeStr);
     try client.stream.writeAll("\r\n\r\n");
 
-    var buffer: [8192]u8 = undefined;
+    var buffer: [16384]u8 = undefined;
     while (true) {
         const bytes_read = try file.read(&buffer);
         if (bytes_read == 0) break; // EOF
