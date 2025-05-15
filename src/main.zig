@@ -11,10 +11,21 @@ pub fn main() !void {
 
     std.log.info("Listening on port {d}", .{address.getPort()});
 
+    var pool: std.Thread.Pool = undefined;
+    const allocator = std.heap.page_allocator;
+    try std.Thread.Pool.init(&pool, .{ .allocator = allocator, .n_jobs = 16 });
+    defer pool.deinit();
+
     while (true) {
         const client = try server.accept();
-        _ = try std.Thread.spawn(.{}, handle_client, .{client});
+        _ = try pool.spawn(testing, .{client});
     }
+}
+
+fn testing(client: std.net.Server.Connection) void {
+    handle_client(client) catch |err| {
+        std.log.err("Error handling client: {}", .{err});
+    };
 }
 
 fn handle_client(client: std.net.Server.Connection) !void {
