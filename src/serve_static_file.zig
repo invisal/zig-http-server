@@ -36,7 +36,18 @@ pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
     }
 
     const fileSize = try file.getEndPos();
-    try std.fmt.format(client.stream.writer(), "HTTP/1.1 200 OK\r\nContent-Type: {any}\r\nConnection: close\r\nContent-Length: {any}\r\n\r\n", .{ contentType, fileSize });
+    // Write HTTP headers in separate parts to avoid formatting overhead
+    try client.stream.writeAll("HTTP/1.1 200 OK\r\n");
+    try client.stream.writeAll("Content-Type: ");
+    try client.stream.writeAll(contentType);
+    try client.stream.writeAll("\r\nConnection: close\r\n");
+    try client.stream.writeAll("Content-Length: ");
+
+    // Convert fileSize to string
+    var sizeBuf: [20]u8 = undefined; // Large enough for any file size
+    const sizeStr = try std.fmt.bufPrint(&sizeBuf, "{d}", .{fileSize});
+    try client.stream.writeAll(sizeStr);
+    try client.stream.writeAll("\r\n\r\n");
 
     var buffer: [8192]u8 = undefined;
     while (true) {
