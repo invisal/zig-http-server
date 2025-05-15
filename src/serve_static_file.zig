@@ -38,7 +38,7 @@ pub fn serve_static_file(client: std.net.Server.Connection, path: []u8) !void {
     const fileSize = try file.getEndPos();
     try std.fmt.format(client.stream.writer(), "HTTP/1.1 200 OK\r\nContent-Type: {any}\r\nConnection: close\r\nContent-Length: {any}\r\n\r\n", .{ contentType, fileSize });
 
-    var buffer: [4096]u8 = undefined;
+    var buffer: [8192]u8 = undefined;
     while (true) {
         const bytes_read = try file.read(&buffer);
         if (bytes_read == 0) break; // EOF
