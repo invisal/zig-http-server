@@ -3,12 +3,13 @@ const serve_static_file = @import("serve_static_file.zig").serve_static_file;
 
 const PORT = 8080;
 const ROOT_DIRECTORY = "./public/";
+
 pub fn main() !void {
     const address = try std.net.Address.parseIp4("127.0.0.1", PORT);
     var server = try address.listen(.{});
     defer server.deinit();
 
-    std.debug.print("Listening on port {d}\n", .{address.getPort()});
+    std.log.info("Listening on port {d}", .{address.getPort()});
 
     while (true) {
         const client = try server.accept();
@@ -26,7 +27,7 @@ fn handle_client(client: std.net.Server.Connection) !void {
 
     // Reading the first line
     const first_line = client.stream.reader().readUntilDelimiter(&first_line_buffer, '\n') catch |err| {
-        std.debug.print("Error reading first line: {}\n", .{err});
+        std.log.info("Error reading first line: {}", .{err});
         return err;
     };
 
@@ -47,12 +48,12 @@ fn handle_client(client: std.net.Server.Connection) !void {
         path = "index.html"; // Default to index.html
     }
 
-    std.debug.print("Accepting request: {s} {s}\n", .{ method, path });
+    std.log.info("Accepting request: {s} {s}", .{ method, path });
 
     // Reading all headers
     while (true) {
         const line = client.stream.reader().readUntilDelimiter(&line_buffer, '\n') catch |err| {
-            std.debug.print("Error reading line: {}\n", .{err});
+            std.log.err("Error reading line: {}", .{err});
             return err;
         };
 
@@ -67,7 +68,7 @@ fn handle_client(client: std.net.Server.Connection) !void {
     // Reading body
     if (bodyContentLength > 0) {
         client.stream.reader().skipBytes(bodyContentLength, .{}) catch |err| {
-            std.debug.print("Error reading body: {}\n", .{err});
+            std.log.err("Error reading body: {}", .{err});
             return err;
         };
     }
@@ -75,11 +76,11 @@ fn handle_client(client: std.net.Server.Connection) !void {
     // Responding to the client
     if (std.mem.eql(u8, method, "GET")) {
         handle_get(client, path) catch |err| {
-            std.debug.print("Error handling GET request: {}\n", .{err});
+            std.log.err("Error handling GET request: {}", .{err});
             return;
         };
     } else {
-        std.debug.print("Unsupported method: {s}\n", .{method});
+        std.log.info("Unsupported method: {s}\n", .{method});
         try client.stream.writeAll("HTTP/1.1 405 Method Not Allowed\r\n\r\n");
     }
 }
