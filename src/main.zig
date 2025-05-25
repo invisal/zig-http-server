@@ -13,7 +13,7 @@ pub fn main() !void {
     var server = try Server.init(allocator, 4096);
     defer server.deinit();
 
-    const address = try std.net.Address.parseIp("127.0.0.1", 5882);
+    const address = try std.net.Address.parseIp("127.0.0.1", 8080);
     try server.run(address);
     std.debug.print("STOPPED\n", .{});
 }
