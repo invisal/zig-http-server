@@ -23,7 +23,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.15.0-dev.532+a3693aae3
+          version: 0.13
 
       - name: Build Zig proxy
         run: |
